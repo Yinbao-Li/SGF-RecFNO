@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+
+# Training outputs (keep source, ignore artifacts)
+**/logs/
+**/nohup.out
+*.pth
+*.pt
+*.ckpt
+
+# TensorBoard
+**/tb/
+**/events.out.tfevents.*
+
+# Data (large files — place locally or set RECFNO_DATA_ROOT)
+data/**/*.h5
+data/**/*.pickle
+data/**/*.mat
+!data/.gitkeep
+
+# External repos (clone via scripts/setup_external.sh)
+external/
+!external/.gitkeep
+
+# Generated figures during runs (keep paper figures/ and plot/*.pdf)
+heat2D/logs/
+cylinder2D/logs/
+darcy/logs/
+NOAA/logs/

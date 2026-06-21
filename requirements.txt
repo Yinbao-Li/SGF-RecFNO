@@ -1,0 +1,10 @@
+torch>=1.12
+torchvision
+tensorboard
+scipy
+h5py
+numpy
+scikit-learn
+tqdm
+configargparse
+matplotlib

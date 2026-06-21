@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sgf-recfno"
+version = "0.1.0"
+description = "SGF-RecFNO: Self-Geometry Feedback RecFNO for sparse heat field reconstruction (Yinbao Li)"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [
+    { name = "Yinbao Li" },
+]
+keywords = ["fourier neural operator", "heat conduction", "sparse reconstruction", "SGF-RecFNO"]
+dependencies = [
+    "torch>=1.12",
+    "torchvision",
+    "tensorboard",
+    "scipy",
+    "h5py",
+    "numpy",
+    "scikit-learn",
+    "tqdm",
+    "configargparse",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+benchmark = [
+    "tensorly",
+    "opt_einsum",
+]
+gino = [
+    "tensorly",
+    "opt_einsum",
+]
+
+[project.scripts]
+sgf-recfno-train = "benchmark.cli:train_sgf_recfno"
+sgf-recfno-compare = "benchmark.cli:run_comparison"
+sgf-recfno-plot-case = "benchmark.cli:plot_case_comparison"
+# legacy aliases
+recfno-train-heat-benchmark = "benchmark.cli:train_recfno_benchmark"
+recfno-train-external = "benchmark.cli:train_external_baselines"
+recfno-compare = "benchmark.cli:run_comparison"
+recfno-plot-case = "benchmark.cli:plot_case_comparison"
+
+[project.urls]
+Homepage = "https://github.com/Yinbao-Li/RecFNO"
+Repository = "https://github.com/Yinbao-Li/RecFNO"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["model*", "data*", "utils*", "benchmark*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.md"]

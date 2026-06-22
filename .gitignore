@@ -40,11 +40,16 @@ Thumbs.db
 *.ckpt
 !checkpoints/**/*.pth
 
-# Data (large — download or generate locally)
+# Data — bundled split files tracked via Git LFS (see data/heat/README.md)
 data/**/*.h5
+!data/heat/train.h5
+!data/heat/val.h5
+!data/heat/test.h5
 data/**/*.pickle
 data/**/*.mat
 !data/.gitkeep
+!data/heat/splits.json
+!data/heat/README.md
 
 # External baseline repos
 external/

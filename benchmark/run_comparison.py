@@ -26,7 +26,7 @@ from benchmark.metrics import (
     count_parameters,
     measure_inference,
 )
-from benchmark.registry import MODEL_SPECS, load_model, _find_ckpt as _find_ckpt_from_registry
+from benchmark.registry import MODEL_SPECS, inference_device, load_model, _find_ckpt as _find_ckpt_from_registry
 from benchmark.visualize import plot_field_triplet, plot_spectrum_curves, plot_summary_bars
 from data.dataset import HeatDataset, HeatInterpolDataset
 
@@ -87,8 +87,8 @@ def evaluate_model(name, max_samples=0, geometry_samples=50):
     fwd = spec['forward']
 
     totals = {
-        'relative_l2': 0, 'mse': 0, 'mae_k': 0, 'psnr': 0,
-        'ssim': 0, 'grad_error': 0, 'spectrum_error': 0,
+        'relative_l2': 0, 'mse': 0, 'mae_k': 0, 'max_ae_k': 0,
+        'psnr': 0, 'ssim': 0, 'grad_error': 0, 'spectrum_error': 0,
     }
     n = 0
     spec_pred_sum = spec_tgt_sum = spec_err_sum = None
@@ -130,6 +130,7 @@ def evaluate_model(name, max_samples=0, geometry_samples=50):
             break
 
     result = {k: totals[k] / n for k in totals}
+    result['rmse_k'] = STD * (result['mse'] ** 0.5)
     result['model'] = name
     result['checkpoint'] = ckpt
     result['params'] = count_parameters(model)
@@ -153,6 +154,34 @@ def evaluate_model(name, max_samples=0, geometry_samples=50):
         for k in geo_totals:
             result[k] = geo_totals[k] / geo_n
     return result, model, spec
+
+
+@torch.no_grad()
+def collect_per_sample_mae_k(name, max_samples=0, device=None):
+    """Per-sample MAE (K) on the test loader for one model."""
+    if device is None:
+        device = inference_device()
+    model, ckpt, spec = load_model(name)
+    loader = get_loaders()[0 if spec['type'] == 'sensor' else 1]
+    fwd = spec['forward']
+
+    chunks = []
+    n = 0
+    for inputs, targets in loader:
+        if not torch.is_tensor(inputs):
+            inputs = torch.from_numpy(np.asarray(inputs)).float()
+        inputs, targets = inputs.to(device), targets.to(device)
+        pred = fwd(model, inputs)
+        batch_mae = torch.mean(torch.abs((pred - targets) * STD), dim=(1, 2, 3))
+        chunks.append(batch_mae.detach().cpu().numpy())
+        n += pred.size(0)
+        if max_samples and n >= max_samples:
+            break
+
+    maes = np.concatenate(chunks)
+    if max_samples:
+        maes = maes[:max_samples]
+    return maes.astype(np.float64), ckpt
 
 
 def ensure_checkpoints(train_missing):

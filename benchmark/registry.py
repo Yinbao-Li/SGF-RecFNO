@@ -6,7 +6,7 @@ import os
 import torch
 
 from benchmark.config import (
-    CKPT_ROOT, FC_SIZE, MODES, OUT_SIZE, SENSOR_NUM, WIDTH,
+    CKPT_ROOT, FC_SIZE, MODES, OUT_SIZE, SENSOR_NUM, TRAIN_CKPT_ROOT, WIDTH,
 )
 from model.fno import FNORecon
 from model.iso_recfno import IsoRecFNO
@@ -14,7 +14,9 @@ from model.sgf_recfno import SGFRecFNO
 
 
 def _find_ckpt(exp_name):
-    paths = glob.glob(os.path.join(CKPT_ROOT, exp_name, 'best_epoch_*.pth'))
+    paths = []
+    for root in (CKPT_ROOT, TRAIN_CKPT_ROOT):
+        paths.extend(glob.glob(os.path.join(root, exp_name, 'best_epoch_*.pth')))
     if not paths:
         return None
     # Pick checkpoint with lowest val loss encoded in filename
@@ -26,11 +28,16 @@ def _find_ckpt(exp_name):
     return min(paths, key=_loss)
 
 
+def inference_device():
+    return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 def _load_state(model, ckpt):
-    state = torch.load(ckpt, map_location='cuda', weights_only=False)['state_dict']
+    dev = inference_device()
+    state = torch.load(ckpt, map_location=dev, weights_only=False)['state_dict']
     state = {k: v for k, v in state.items() if not k.endswith('_metadata')}
     model.load_state_dict(state, strict=False)
-    model.cuda().eval()
+    model.to(dev).eval()
     return model
 
 

@@ -43,6 +43,7 @@ def compute_loss(net, inputs, outputs, args):
         aux['sdf_self'],
         quantiles=args.quantiles,
         field_loss=args.field_loss,
+        lambda_field=args.lambda_field,
         lambda_grad=args.lambda_grad,
         lambda_sdf=args.lambda_sdf,
         lambda_ssim=args.lambda_ssim,

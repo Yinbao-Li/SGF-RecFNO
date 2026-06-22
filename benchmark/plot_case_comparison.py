@@ -51,7 +51,6 @@ def predict_one(name, sample_idx):
 
 def main():
     args = parse_args()
-    os.chdir(os.path.join(filename, 'heat2D'))
     os.makedirs(args.out_dir, exist_ok=True)
 
     preds = []

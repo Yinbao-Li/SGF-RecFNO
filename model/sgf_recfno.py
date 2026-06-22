@@ -97,14 +97,20 @@ class SGFRecFNO(nn.Module):
             modes2=refine_modes2,
         )
 
-    def forward(self, x, return_aux=False):
+    def forward(self, x, return_aux=False, ablate_sdf=False, skip_refine=False):
         coarse = self.coarse_net(x)
         sdf_self, levels = extract_self_geometry(
             coarse, self.quantiles, self.sdf_scale,
         )
-        geom_feat = torch.cat([coarse, sdf_self], dim=1)
-        delta = self.refine_net(geom_feat)
-        field = coarse + delta
+        if skip_refine:
+            field = coarse
+            delta = torch.zeros_like(coarse)
+        else:
+            if ablate_sdf:
+                sdf_self = torch.zeros_like(sdf_self)
+            geom_feat = torch.cat([coarse, sdf_self], dim=1)
+            delta = self.refine_net(geom_feat)
+            field = coarse + delta
 
         if return_aux:
             return {

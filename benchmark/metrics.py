@@ -27,6 +27,15 @@ def mae_metric_k(pred, target, std=50.0):
     return torch.mean(torch.abs((pred - target) * std))
 
 
+def rmse_metric_k_from_mse(mse_norm, std=50.0):
+    """Pooled RMSE in Kelvin from normalized MSE (mean over pixels)."""
+    return float(std * math.sqrt(max(float(mse_norm), 0.0)))
+
+
+def max_ae_metric_k(pred, target, std=50.0):
+    return torch.max(torch.abs((pred - target) * std))
+
+
 def psnr_metric(pred, target, data_range=1.0, eps=1e-10):
     mse = F.mse_loss(pred, target).clamp_min(eps)
     return 10.0 * torch.log10(torch.tensor(data_range ** 2, device=pred.device) / mse)
@@ -110,10 +119,13 @@ def measure_inference(model, forward_fn, sample_input, warmup=20, repeats=100):
 
 
 def compute_field_metrics(pred, target, std=50.0):
+    mse = float(mse_metric(pred, target).item())
     return {
         'relative_l2': float(relative_l2(pred, target).item()),
-        'mse': float(mse_metric(pred, target).item()),
+        'mse': mse,
         'mae_k': float(mae_metric_k(pred, target, std=std).item()),
+        'rmse_k': rmse_metric_k_from_mse(mse, std=std),
+        'max_ae_k': float(max_ae_metric_k(pred, target, std=std).item()),
         'psnr': float(psnr_metric(pred, target).item()),
         'ssim': float(ssim_metric(pred, target).item()),
         'grad_error': float(gradient_error(pred, target).item()),

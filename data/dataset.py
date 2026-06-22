@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 """Heat conduction datasets for sparse field reconstruction."""
+from __future__ import annotations
+
+import os
+from collections import defaultdict
+
 import h5py
 import numpy as np
 import torch
@@ -7,7 +12,7 @@ from scipy.interpolate import griddata
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from data.paths import HEAT_H5, heat_field_key
+from data.paths import heat_split_paths, heat_field_key
 
 # Fixed 25-sensor grid (200×200 field)
 HEAT_SENSOR_POSITIONS = np.array(
@@ -19,6 +24,66 @@ HEAT_SENSOR_POSITIONS = np.array(
     dtype=np.int64,
 )
 
+# Global index ranges (6000 samples)
+_SPLIT_RANGES = (
+    (0, 4000, 'train'),
+    (4000, 5000, 'val'),
+    (5000, 6000, 'test'),
+)
+
+
+def _global_to_local(global_idx: int) -> tuple[str, int]:
+    for lo, hi, name in _SPLIT_RANGES:
+        if lo <= global_idx < hi:
+            return name, global_idx - lo
+    raise IndexError(f'global index {global_idx} out of range 0..5999')
+
+
+def _load_fields(global_indices: list[int]) -> np.ndarray:
+    """Load samples by global index from monolithic or split H5 files."""
+    paths = heat_split_paths()
+    index_list = list(global_indices)
+
+    if paths['mode'] == 'monolithic':
+        path = paths['monolithic']
+        if not os.path.isfile(path):
+            raise FileNotFoundError(
+                f'Heat data not found: {path}. Run git lfs pull or see data/heat/README.md'
+            )
+        with h5py.File(path, 'r') as f:
+            k = heat_field_key(path)
+            return np.asarray(f[k][index_list])
+
+    # split files
+    for name in ('train', 'val', 'test'):
+        if not os.path.isfile(paths[name]):
+            raise FileNotFoundError(
+                f'Missing {paths[name]}. Run: git lfs pull'
+            )
+
+    grouped: dict[str, list[tuple[int, int]]] = defaultdict(list)
+    for gi in index_list:
+        split, local = _global_to_local(gi)
+        grouped[split].append((gi, local))
+
+    out: np.ndarray | None = None
+    pos = {gi: i for i, gi in enumerate(index_list)}
+
+    for split, pairs in grouped.items():
+        path = paths[split]
+        locals_ = [p[1] for p in pairs]
+        globals_ = [p[0] for p in pairs]
+        with h5py.File(path, 'r') as f:
+            k = heat_field_key(path)
+            block = np.asarray(f[k][locals_])
+        if out is None:
+            out = np.empty((len(index_list),) + block.shape[1:], dtype=block.dtype)
+        for g, row in zip(globals_, block):
+            out[pos[g]] = row
+
+    assert out is not None
+    return out
+
 
 class HeatDataset(Dataset):
     """25 sensor values → full 200×200 temperature field."""
@@ -26,9 +91,11 @@ class HeatDataset(Dataset):
     def __init__(self, index, mean=308, std=50):
         super().__init__()
         self.mean, self.std = mean, std
-        with h5py.File(HEAT_H5, 'r') as f:
-            key = heat_field_key()
-            self.data = torch.from_numpy(f[key][index, :, :, :]).float()
+        index_list = list(index)
+        arr = _load_fields(index_list)
+        self.data = torch.from_numpy(arr).float()
+        if self.data.dim() == 3:
+            self.data = self.data.unsqueeze(1)
         self.data = (self.data - mean) / std
 
         sparse_data = []
@@ -50,9 +117,10 @@ class HeatInterpolDataset(Dataset):
     def __init__(self, index, mean=308, std=50):
         super().__init__()
         self.mean, self.std = mean, std
-        with h5py.File(HEAT_H5, 'r') as f:
-            key = heat_field_key()
-            raw = f[key][index, :, :, :]
+        index_list = list(index)
+        raw = _load_fields(index_list)
+        if raw.ndim == 3:
+            raw = raw[:, np.newaxis, :, :]
         raw = (raw - mean) / std
 
         _, _, h, w = raw.shape

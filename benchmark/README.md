@@ -5,23 +5,38 @@ Unified comparison centered on **SGF-RecFNO**, against IsoRecFNO, RecFNO, and th
 ## Quick commands
 
 ```bash
-make train-sgf        # train SGF-RecFNO only (recommended)
-make train-all        # SGF-RecFNO + IsoRecFNO + RecFNO (300 epochs each)
-make setup-external   # clone official baseline repos
-make train-external   # train GINO / Geo-FNO / PINO
-make compare          # evaluate all models on test set (5000–5999)
-make plot-case        # single-case error visualization
+make train-sgf          # train SGF-RecFNO only (recommended)
+make train-all          # SGF-RecFNO + IsoRecFNO + RecFNO (300 epochs each)
+make setup-external     # clone official baseline repos
+make train-external     # train GINO / Geo-FNO / PINO
+make compare            # evaluate all models on test set (5000–5999)
+make plot-case          # single-case error visualization
+make plot-figures       # regenerate all README figures
+make train-ablations    # loss & SDF-depth ablations (7×300 ep; full/K=4 reuse main ckpt)
+make plot-ablations     # evaluate ablation checkpoints & plot MAE
 ```
 
-Or from repo root after `pip install -e .`:
+> Run benchmark scripts from the `heat2D/` working directory, or use the Makefile / CLI (they set cwd automatically).
+
+## Plotting scripts
+
+| Script | Output | `--copy-figures` → |
+|--------|--------|---------------------|
+| `plot_problem_setup.py` | Benchmark geometry schematic | `figures/setup/` |
+| `plot_three_cases_six_models.py` | 3×6 prediction + error grid | `figures/benchmark/` |
+| `plot_isotherm_comparison.py` | Isotherm contour overlays | `figures/benchmark/` |
+| `plot_test_metrics.py` | Test metric bar charts + CSV | `figures/benchmark/` |
+| `plot_mae_histogram.py` | Per-sample MAE ECDF + ridge | `figures/benchmark/` |
+| `plot_sgf_pipeline.py` | SGF 2×5 pipeline figure | `figures/method/` |
+| `plot_sdf_ablation.py` | Inference-time SDF ablation | `figures/method/` |
+| `plot_ablation_studies.py` | Training ablation MAE plots | `figures/ablation/` |
+| `plot_all_figures.py` | Run all of the above | all categories |
+
+Example (from `heat2D/`):
 
 ```bash
-sgf-recfno-train
-sgf-recfno-compare --out-dir logs/benchmark_comparison
-sgf-recfno-plot-case
+RECFNO_DATA_ROOT=../data python ../benchmark/plot_sgf_pipeline.py --sample-idx 5500 --copy-figures
 ```
-
-> Run benchmark scripts from the `heat2D/` working directory, or use the Makefile / CLI above (they set the cwd automatically).
 
 ## Models
 
@@ -34,14 +49,17 @@ sgf-recfno-plot-case
 | Geo-FNO | sensor | 25 sensors + coordinates | [Geo-FNO](https://github.com/neuraloperator/Geo-FNO) |
 | GINO | sensor | 25 sensors + coordinates | [neuraloperator](https://github.com/neuraloperator/neuraloperator) |
 
+## Ablation studies
+
+**Loss components** (`heat2D/run_sgf_ablations.py --study loss`): full / w/o Field / w/o Grad / w/o SDF / w/o SSIM.
+
+**SDF depth K** (`--study quantile`): K = 1, 2, 4, 8 isotherm levels; quantiles \(q_i = i/(K+1)\).
+
+Checkpoints: `heat2D/logs/ckpt/ablation_loss_*` and `ablation_k*`. Evaluation: `make plot-ablations`.
+
 ## Outputs
 
-Results are written to `heat2D/logs/benchmark_comparison/`:
-
-- `comparison_table.csv` — quantitative metrics
-- `comparison_table.tex` — LaTeX table
-- `comparison_results.json` — full results
-- Spectrum / bar charts and per-model field visualizations
+Runtime results go to `heat2D/logs/benchmark_comparison/` (gitignored). Committed figures live under `figures/` — see [figures/README.md](../figures/README.md).
 
 ## Further reading
 

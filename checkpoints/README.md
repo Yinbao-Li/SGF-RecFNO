@@ -1,6 +1,6 @@
 # Pre-trained checkpoints (300 epochs, heat conduction)
 
-Best validation checkpoints for the unified benchmark. Loaded automatically by `benchmark/run_comparison.py`.
+Best validation checkpoints for the unified benchmark.
 
 | Directory | Model | Test MAE (K) |
 |-----------|-------|--------------|
@@ -11,10 +11,35 @@ Best validation checkpoints for the unified benchmark. Loaded automatically by `
 | `benchmark_geofno_300/` | Geo-FNO | 0.0373 |
 | `benchmark_gino_300/` | GINO | 0.3658 |
 
-> Files over 100 MB are stored with **Git LFS**. After cloning:
-> ```bash
-> git lfs install
-> git lfs pull
-> ```
+## Download after clone
 
-New training runs save to `heat2D/logs/ckpt/` by default.
+```bash
+git lfs install
+git clone https://github.com/Yinbao-Li/SGF-RecFNO.git
+cd SGF-RecFNO
+git lfs pull
+```
+
+## Verify checkpoints are real (not broken pointers)
+
+Each `.pth` should be **megabytes**, not ~130 bytes:
+
+```bash
+ls -lh checkpoints/*/*.pth
+file checkpoints/benchmark_sgf-recfno_300/*.pth
+# Good: 175M, "Zip archive data" or PyTorch pickle
+# Bad:  130 bytes, ASCII text "version https://git-lfs.github.com/spec/v1"
+```
+
+If files are ~130 bytes, LFS objects were not uploaded. Open an issue or pull latest after maintainer runs `git lfs push`.
+
+## Maintainer: upload LFS binaries
+
+```bash
+sudo apt install git-lfs
+bash scripts/push_checkpoints_lfs.sh
+git lfs push origin main --all
+git push origin main
+```
+
+New training runs save to `heat2D/logs/ckpt/` (gitignored).

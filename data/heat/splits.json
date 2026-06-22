@@ -1,0 +1,35 @@
+{
+  "source": "temperature6000.h5",
+  "field_key": "sol",
+  "shape_per_sample": [
+    1,
+    200,
+    200
+  ],
+  "splits": {
+    "train": {
+      "file": "train.h5",
+      "count": 4000,
+      "global_index_range": [
+        0,
+        3999
+      ]
+    },
+    "val": {
+      "file": "val.h5",
+      "count": 1000,
+      "global_index_range": [
+        4000,
+        4999
+      ]
+    },
+    "test": {
+      "file": "test.h5",
+      "count": 1000,
+      "global_index_range": [
+        5000,
+        5999
+      ]
+    }
+  }
+}

@@ -69,6 +69,7 @@ def parse_sgf_args():
     parser.add_argument('--quantiles', type=float, nargs='+', default=list(DEFAULT_QUANTILES))
 
     parser.add_argument('--field_loss', type=str, default='l1', choices=['l1', 'mse', 'relative_l2'])
+    parser.add_argument('--lambda_field', type=float, default=1.0)
     parser.add_argument('--lambda_grad', type=float, default=0.1)
     parser.add_argument('--lambda_sdf', type=float, default=0.5)
     parser.add_argument('--lambda_ssim', type=float, default=0.1)

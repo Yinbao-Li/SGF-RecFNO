@@ -45,6 +45,27 @@ def chamfer_distance(a, b):
     return 0.5 * (dist.min(axis=1).mean() + dist.min(axis=0).mean())
 
 
+def gt_isotherm_levels_k(truth_k, quantiles=DEFAULT_QUANTILES):
+    """GT-defined isotherm levels in physical temperature (K)."""
+    return np.quantile(np.asarray(truth_k, dtype=np.float64).ravel(), quantiles)
+
+
+def mean_chamfer_isotherms(pred_k, truth_k, levels_k=None, quantiles=DEFAULT_QUANTILES):
+    """Mean Chamfer distance (px) between pred and GT isotherms at GT quantile levels."""
+    if levels_k is None:
+        levels_k = gt_isotherm_levels_k(truth_k, quantiles)
+    chamfers = []
+    pred_k = np.asarray(pred_k, dtype=np.float64)
+    truth_k = np.asarray(truth_k, dtype=np.float64)
+    for lv in levels_k:
+        pp = _extract_contour_points(pred_k, float(lv))
+        tp = _extract_contour_points(truth_k, float(lv))
+        cd = chamfer_distance(pp, tp)
+        if not np.isnan(cd):
+            chamfers.append(cd)
+    return float(np.mean(chamfers)) if chamfers else float('nan')
+
+
 def isotherm_geometry_metrics(pred, target, quantiles=DEFAULT_QUANTILES, std=50.0):
     """Compute per-quantile Chamfer/Hausdorff on physical temperature fields."""
     pred_np = pred[0, 0].detach().cpu().numpy() * std

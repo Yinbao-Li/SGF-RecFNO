@@ -21,7 +21,7 @@ Implementation: `model/sgf_recfno.py` · Loss: `utils/sgf_loss.py`
 
 ---
 
-## Benchmark results (test 5000–5999)
+## Benchmark results (test 5000–5999, n=1000)
 
 | Model | Test MAE ↓ | Notes |
 |-------|-----------|-------|
@@ -32,7 +32,33 @@ Implementation: `model/sgf_recfno.py` · Loss: `utils/sgf_loss.py`
 | Geo-FNO | 0.0373 K | Pre-trained |
 | GINO | 0.3658 K | Pre-trained |
 
-![Benchmark](figures/sgf_benchmark_case5500.png)
+### Problem setup
+
+25 sensors on a 200×200 field; Dirichlet / adiabatic boundaries.
+
+![Problem setup](figures/setup/benchmark_problem_setup.png)
+
+### Six-model comparison (3 test cases)
+
+![Three cases × six models](figures/benchmark/three_cases_six_models.png)
+
+### Isotherm geometry (contours vs. ground truth)
+
+![Isotherm overlay](figures/benchmark/three_cases_isotherm_overlay.png)
+
+### Test-set metrics & MAE distribution
+
+| Bar charts (MAE, RMSE, PSNR, …) | Per-sample MAE (ECDF + ridge) |
+|--------------------------------|-------------------------------|
+| ![Metrics](figures/benchmark/test_metrics_comparison.png) | ![MAE distribution](figures/benchmark/test_mae_distribution.png) |
+
+### SGF-RecFNO pipeline & SDF ablation
+
+| Pipeline (sample #5500) | Inference-time SDF ablation |
+|-------------------------|----------------------------|
+| ![Pipeline](figures/method/sgf_pipeline_2x5.png) | ![SDF ablation](figures/method/sdf_ablation.png) |
+
+More figures and regeneration commands: [figures/README.md](figures/README.md).
 
 ---
 
@@ -41,10 +67,17 @@ Implementation: `model/sgf_recfno.py` · Loss: `utils/sgf_loss.py`
 ### 1. Clone (with checkpoints via Git LFS)
 
 ```bash
+sudo apt install git-lfs    # once per machine
 git lfs install
 git clone https://github.com/Yinbao-Li/SGF-RecFNO.git
 cd SGF-RecFNO
 git lfs pull
+```
+
+Verify weights downloaded (each `.pth` should be **MB**, not ~130 bytes):
+
+```bash
+ls -lh checkpoints/*/*.pth
 ```
 
 ### 2. Install
@@ -56,25 +89,36 @@ pip install -e .
 
 ### 3. Data
 
-Download the [heat dataset](https://nudteducn-my.sharepoint.com/:f:/g/personal/zhaoxiaoyu13_nudt_edu_cn/ElHePUBS_gpIjr240jcrdZ4BhMKsA3DBeYWLS6Roq_52TA?e=RZKOh5) or generate locally:
+**Option A — bundled splits (after `git lfs pull`):**
+
+```bash
+ls data/heat/train.h5 data/heat/val.h5 data/heat/test.h5
+```
+
+**Option B — download or generate:**
 
 ```bash
 python scripts/generate_temperature6000.py
+# or download from SharePoint (see data/heat/README.md)
 ```
+
+See [data/heat/README.md](data/heat/README.md) for split indices (train 0–3999, val 4000–4999, test 5000–5999).
 
 ### 4. Evaluate pre-trained models (no training required)
 
 ```bash
 make compare
 make plot-case
+make plot-figures    # regenerate README figures (needs GPU + data)
 ```
 
 ### 5. Train from scratch
 
 ```bash
-make train-sgf     # SGF-RecFNO only
-make train-all     # SGF-RecFNO + IsoRecFNO + RecFNO
+make train-sgf        # SGF-RecFNO only
+make train-all        # SGF-RecFNO + IsoRecFNO + RecFNO
 make setup-external && make train-external   # external baselines
+make train-ablations  # loss & SDF-depth ablations (9×300 ep)
 ```
 
 ---
@@ -84,15 +128,16 @@ make setup-external && make train-external   # external baselines
 ```
 SGF-RecFNO/
 ├── checkpoints/           ← pre-trained weights (300 epochs, Git LFS)
+├── figures/               ← README figures (setup / benchmark / method / ablation)
 ├── model/                 ← SGF-RecFNO, IsoRecFNO, RecFNO backbone
 ├── data/                  ← HeatDataset loaders
-├── benchmark/             ← unified evaluation framework
+├── benchmark/             ← evaluation, plotting, ablation tools
 ├── heat2D/                ← training scripts
 ├── scripts/               ← data generation & setup
-└── figures/               ← README figures
+└── docs/                  ← structure notes
 ```
 
-See [docs/STRUCTURE.md](docs/STRUCTURE.md) and [checkpoints/README.md](checkpoints/README.md).
+See [docs/STRUCTURE.md](docs/STRUCTURE.md), [benchmark/README.md](benchmark/README.md), and [checkpoints/README.md](checkpoints/README.md).
 
 ---
 

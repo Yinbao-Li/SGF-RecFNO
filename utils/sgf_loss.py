@@ -24,12 +24,13 @@ def sgf_recfno_loss(
     sdf_self,
     quantiles=DEFAULT_QUANTILES,
     field_loss='l1',
+    lambda_field=1.0,
     lambda_grad=0.1,
     lambda_sdf=0.5,
     lambda_ssim=0.1,
     sdf_scale=5.0,
 ):
-    """L = L_field + lambda_grad * L_grad + lambda_sdf * L_sdf + lambda_ssim * L_ssim."""
+    """L = λ_f L_field + λ_g L_grad + λ_s L_sdf + λ_s L_ssim."""
     if field_loss == 'relative_l2':
         loss_field = relative_l2_loss(pred, target)
     elif field_loss == 'mse':
@@ -46,7 +47,7 @@ def sgf_recfno_loss(
     loss_ssim = ssim_loss(pred, target)
 
     total = (
-        loss_field
+        lambda_field * loss_field
         + lambda_grad * loss_grad
         + lambda_sdf * loss_sdf
         + lambda_ssim * loss_ssim

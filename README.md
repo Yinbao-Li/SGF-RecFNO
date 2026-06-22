@@ -4,7 +4,7 @@
 
 > This repository extends [RecFNO](https://github.com/zhaoxiaoyu1995/RecFNO) (Zhao et al., 2023). The **primary contributions** by **Yinbao Li** are **IsoRecFNO** and **SGF-RecFNO**. **SGF-RecFNO** is the recommended method.
 
-[![GitHub](https://img.shields.io/github/stars/Yinbao-Li/RecFNO?style=social)](https://github.com/Yinbao-Li/RecFNO)
+[![GitHub](https://img.shields.io/github/stars/Yinbao-Li/SGF-RecFNO?style=social)](https://github.com/Yinbao-Li/SGF-RecFNO)
 
 ---
 
@@ -42,8 +42,8 @@ Implementation: `model/sgf_recfno.py` · Loss: `utils/sgf_loss.py`
 
 ```bash
 git lfs install
-git clone https://github.com/Yinbao-Li/RecFNO.git
-cd RecFNO
+git clone https://github.com/Yinbao-Li/SGF-RecFNO.git
+cd SGF-RecFNO
 git lfs pull
 ```
 
@@ -82,7 +82,7 @@ make setup-external && make train-external   # external baselines
 ## Repository layout
 
 ```
-RecFNO/
+SGF-RecFNO/
 ├── checkpoints/           ← pre-trained weights (300 epochs, Git LFS)
 ├── model/                 ← SGF-RecFNO, IsoRecFNO, RecFNO backbone
 ├── data/                  ← HeatDataset loaders

@@ -47,8 +47,8 @@ recfno-compare = "benchmark.cli:run_comparison"
 recfno-plot-case = "benchmark.cli:plot_case_comparison"
 
 [project.urls]
-Homepage = "https://github.com/Yinbao-Li/RecFNO"
-Repository = "https://github.com/Yinbao-Li/RecFNO"
+Homepage = "https://github.com/Yinbao-Li/SGF-RecFNO"
+Repository = "https://github.com/Yinbao-Li/SGF-RecFNO"
 
 [tool.setuptools.packages.find]
 where = ["."]

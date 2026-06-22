@@ -10,7 +10,7 @@ If you use **SGF-RecFNO** or **IsoRecFNO** from this repository, please cite:
   title = {SGF-RecFNO: Self-Geometry Feedback RecFNO for Sparse Heat Field Reconstruction},
   year = {2026},
   publisher = {GitHub},
-  url = {https://github.com/Yinbao-Li/RecFNO}
+  url = {https://github.com/Yinbao-Li/SGF-RecFNO}
 }
 ```
 

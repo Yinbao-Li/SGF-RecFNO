@@ -22,8 +22,9 @@ FIELD_STD = 50.0  # temperature normalization scale (K)
 EPOCHS = 300
 DEFAULT_BATCH = 8
 
-# Paths (relative to heat2D/ working directory for legacy scripts)
-CKPT_ROOT = os.path.join('logs', 'ckpt')
+# Paths (relative to heat2D/ working directory)
+CKPT_ROOT = os.path.join('..', 'checkpoints')
+TRAIN_CKPT_ROOT = os.path.join('logs', 'ckpt')  # new training outputs
 BENCHMARK_LOG_DIR = os.path.join('logs', 'benchmark_300epoch')
 COMPARISON_OUT_DIR = os.path.join('logs', 'benchmark_comparison')
 

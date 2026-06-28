@@ -8,9 +8,7 @@ from collections import defaultdict
 import h5py
 import numpy as np
 import torch
-from scipy.interpolate import griddata
 from torch.utils.data import Dataset
-from tqdm import tqdm
 
 from data.paths import heat_split_paths, heat_field_key
 
@@ -85,6 +83,14 @@ def _load_fields(global_indices: list[int]) -> np.ndarray:
     return out
 
 
+def _nearest_sensor_index_map(sensor_xy: np.ndarray, x_coor: np.ndarray, y_coor: np.ndarray) -> np.ndarray:
+    """For each grid cell, index of the nearest sensor (matches griddata nearest)."""
+    pts = np.stack([x_coor.ravel(), y_coor.ravel()], axis=1).astype(np.float32)
+    sensors = np.asarray(sensor_xy, dtype=np.float32)
+    diff = pts[:, None, :] - sensors[None, :, :]
+    return (diff * diff).sum(axis=2).argmin(axis=1).reshape(x_coor.shape)
+
+
 class HeatDataset(Dataset):
     """25 sensor values → full 200×200 temperature field."""
 
@@ -114,9 +120,10 @@ class HeatDataset(Dataset):
 class HeatInterpolDataset(Dataset):
     """4-channel grid input (interp + mask + coords) for PINO-style models."""
 
-    def __init__(self, index, mean=308, std=50):
+    def __init__(self, index, mean=308, std=50, precompute=True):
         super().__init__()
         self.mean, self.std = mean, std
+        self.precompute = precompute
         index_list = list(index)
         raw = _load_fields(index_list)
         if raw.ndim == 3:
@@ -137,22 +144,24 @@ class HeatInterpolDataset(Dataset):
         for i in range(HEAT_SENSOR_POSITIONS.shape[0]):
             r, c = HEAT_SENSOR_POSITIONS[i]
             sparse_vals.append(raw[:, 0, r, :][:, c].reshape(-1, 1))
-        sparse_vals = np.concatenate(sparse_vals, axis=-1)
+        sparse_vals = np.concatenate(sparse_vals, axis=-1).astype(np.float32, copy=False)
+        nn_index = _nearest_sensor_index_map(sparse_locations_ex, x_coor, y_coor)
 
-        sparse_datas = []
-        print('Building interpolated grid inputs (one-time)...', flush=True)
-        for i in tqdm(range(sparse_vals.shape[0])):
-            interp = griddata(sparse_locations_ex, sparse_vals[i], (x_coor, y_coor), method='nearest')
-            sparse_datas.append(np.expand_dims(interp, axis=0))
-        sparse_datas = np.concatenate(sparse_datas, axis=0)
+        sparse_datas = None
+        if precompute:
+            print('Building interpolated grid inputs (vectorized)...', flush=True)
+            flat = nn_index.ravel()
+            sparse_datas = sparse_vals[:, flat].reshape(sparse_vals.shape[0], h, w)
 
-        mask = np.zeros_like(sparse_datas[0, :, :])
+        mask = np.zeros((h, w), dtype=np.float32)
         for i in range(HEAT_SENSOR_POSITIONS.shape[0]):
             r, c = HEAT_SENSOR_POSITIONS[i]
             mask[r, c] = 1
 
         self.data = torch.from_numpy(raw).float()
-        self.observe = torch.from_numpy(sparse_datas).float().unsqueeze(dim=1)
+        self.nn_index = nn_index
+        self.sparse_vals = sparse_vals
+        self.observe = None if sparse_datas is None else torch.from_numpy(sparse_datas).float().unsqueeze(dim=1)
         self.mask = torch.from_numpy(mask).float().unsqueeze(dim=0)
         self.coor = torch.cat([
             torch.from_numpy(x_coor).unsqueeze(dim=0) / w,
@@ -160,7 +169,12 @@ class HeatInterpolDataset(Dataset):
         ], dim=0).float()
 
     def __getitem__(self, index):
-        return torch.cat([self.observe[index], self.mask, self.coor], dim=0), self.data[index]
+        if self.observe is None:
+            interp = self.sparse_vals[index][self.nn_index]
+            observe = torch.from_numpy(interp).float().unsqueeze(0)
+        else:
+            observe = self.observe[index]
+        return torch.cat([observe, self.mask, self.coor], dim=0), self.data[index]
 
     def __len__(self):
         return self.data.shape[0]

@@ -18,7 +18,7 @@ from utils.bootstrap import ensure_repo_context
 
 ensure_repo_context(heat2d_cwd=True)
 
-from benchmark.config import ALL_MODELS, COMPARISON_OUT_DIR, FIELD_STD, TEST_INDEX, VIS_INDEX
+from benchmark.config import COMPARISON_MODELS, COMPARISON_OUT_DIR, FIELD_STD, TEST_INDEX, VIS_INDEX
 from benchmark.isotherm_metrics import isotherm_geometry_metrics
 from benchmark.metrics import (
     batch_fourier_spectrum_curve,
@@ -254,12 +254,12 @@ def main():
         model_list = args.models
     else:
         model_list = []
-        for name in ALL_MODELS:
+        for name in COMPARISON_MODELS:
             if name not in MODEL_SPECS:
                 continue
             if name in missing:
                 continue
-            ckpt = _find_ckpt_from_registry(name)
+            ckpt = _find_ckpt_from_registry(MODEL_SPECS[name]['exp'])
             if ckpt is None:
                 continue
             model_list.append(name)

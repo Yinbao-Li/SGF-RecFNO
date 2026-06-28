@@ -74,6 +74,51 @@ More figures and regeneration commands: [figures/README.md](figures/README.md).
 
 ---
 
+## Fluid benchmark (cylinder wake & Darcy flow, 500 epochs)
+
+Task-specific level-set geometry (see `utils/field_geometry.py`):
+
+| Task | Field | SGF geometry | Test MAE (SGF / RecFNO) |
+|------|-------|--------------|-------------------------|
+| **Cylinder** | \(\omega\) | \(\|\omega\|\) + \(\|\nabla\omega\|\), wake-weighted loss | **5.1e-5** / 6.0e-5 |
+| **Darcy** | \(p\) | \(p\) + \(\log(1+\|\nabla p\|)\) | **6.6e-5** / 6.9e-5 |
+
+### Problem setup
+
+| Cylinder (4 sensors) | Darcy (25 sensors) |
+|----------------------|---------------------|
+| ![Cylinder setup](figures/fluid/cylinder_problem_setup.png) | ![Darcy setup](figures/fluid/darcy_problem_setup.png) |
+
+### Three cases × models
+
+| Cylinder wake | Darcy flow |
+|---------------|------------|
+| ![Cylinder cases](figures/fluid/cylinder_three_cases.png) | ![Darcy cases](figures/fluid/darcy_three_cases.png) |
+
+### Level-set geometry overlay
+
+| Cylinder | Darcy |
+|----------|-------|
+| ![Cylinder geom](figures/fluid/cylinder_geometry_overlay.png) | ![Darcy geom](figures/fluid/darcy_geometry_overlay.png) |
+
+### Test metrics & MAE distribution
+
+| Cylinder metrics | Darcy metrics |
+|------------------|---------------|
+| ![Cylinder metrics](figures/fluid/cylinder_test_metrics.png) | ![Darcy metrics](figures/fluid/darcy_test_metrics.png) |
+| ![Cylinder MAE](figures/fluid/cylinder_mae_distribution.png) | ![Darcy MAE](figures/fluid/darcy_mae_distribution.png) |
+
+```bash
+export RECFNO_DATA_ROOT=../../data
+make train-fluid-resume      # train / resume to 500 ep
+make compare-fluid           # per-task evaluation JSON
+make plot-fluid-figures      # regenerate figures above
+```
+
+Data: [data/fluid/README.md](../data/fluid/README.md)
+
+---
+
 ## Quick start
 
 ### 1. Clone (with checkpoints via Git LFS)
@@ -139,12 +184,13 @@ make train-ablations  # loss & SDF-depth ablations (9×300 ep)
 
 ```
 SGF-RecFNO/
-├── checkpoints/           ← pre-trained weights (300 epochs, Git LFS)
-├── figures/               ← README figures (setup / benchmark / method / ablation)
-├── model/                 ← SGF-RecFNO, IsoRecFNO, RecFNO backbone
-├── data/                  ← HeatDataset loaders
-├── benchmark/             ← evaluation, plotting, ablation tools
-├── heat2D/                ← training scripts
+├── checkpoints/           ← pre-trained weights (Git LFS)
+├── figures/               ← README figures (heat + fluid + method)
+├── model/                 ← SGF-RecFNO, IsoRecFNO, RecFNO
+├── data/                  ← HeatDataset + fluid loaders
+├── benchmark/             ← evaluation, heat/fluid plotting
+├── heat2D/                ← heat training & runtime logs
+├── fluid2D/               ← fluid training entry points
 ├── scripts/               ← data generation & setup
 └── docs/                  ← structure notes
 ```

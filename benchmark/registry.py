@@ -11,6 +11,7 @@ from benchmark.config import (
 from model.fno import FNORecon
 from model.iso_recfno import IsoRecFNO
 from model.sgf_recfno import SGFRecFNO
+from utils.ablation_config import quantile_ablation_exp_name, quantiles_for_k
 
 
 def _find_ckpt(exp_name):
@@ -56,6 +57,14 @@ def _build_pino():
     return PINOHeatRecon()
 
 
+def _build_sgf_k8():
+    return SGFRecFNO(
+        SENSOR_NUM, FC_SIZE, OUT_SIZE,
+        modes1=MODES, modes2=MODES, width=WIDTH,
+        num_sdf=8, quantiles=quantiles_for_k(8),
+    )
+
+
 MODEL_SPECS = {
     'SGF-RecFNO': {
         'type': 'sensor',
@@ -65,6 +74,14 @@ MODEL_SPECS = {
         'forward': lambda m, x: m(x, return_aux=True)['field'],
         'geometry_model': True,
         'primary': True,
+    },
+    'SGF-RecFNO (K=8)': {
+        'type': 'sensor',
+        'source': 'Yinbao Li — SGF-RecFNO with K=8 SDF channels (this repo)',
+        'exp': quantile_ablation_exp_name(8),
+        'build': _build_sgf_k8,
+        'forward': lambda m, x: m(x, return_aux=True)['field'],
+        'geometry_model': True,
     },
     'IsoRecFNO': {
         'type': 'sensor',

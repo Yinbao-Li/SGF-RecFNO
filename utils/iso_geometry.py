@@ -7,8 +7,8 @@ import torch.nn.functional as F
 DEFAULT_QUANTILES = (0.2, 0.4, 0.6, 0.8)
 
 
-def temperature_quantile_levels(field, quantiles=DEFAULT_QUANTILES):
-    """Per-sample temperature quantiles from a scalar field.
+def field_quantile_levels(field, quantiles=DEFAULT_QUANTILES):
+    """Per-sample quantile levels from a scalar field.
 
     Args:
         field: (B, 1, H, W)
@@ -41,11 +41,16 @@ def spatial_gradients(field):
     return gx, gy
 
 
-def soft_isotherm_sdf(field, levels, scale=5.0, eps=1e-3):
-    """Differentiable signed-distance proxy to isotherms.
+def temperature_quantile_levels(field, quantiles=DEFAULT_QUANTILES):
+    """Alias for :func:`field_quantile_levels` (heat / isotherm tasks)."""
+    return field_quantile_levels(field, quantiles)
 
-    Uses the normalized level-set function phi = (T - T_q) / |grad T|, which
-    approximates signed distance in the direction normal to each isotherm.
+
+def soft_levelset_sdf(field, levels, scale=5.0, eps=1e-3):
+    """Differentiable signed-distance proxy to scalar-field level sets.
+
+    Uses the normalized level-set function phi = (phi - c) / |grad phi|, which
+    approximates signed distance in the direction normal to each contour.
     Values are squashed to (-1, 1) for stable regression.
 
     Args:
@@ -63,6 +68,11 @@ def soft_isotherm_sdf(field, levels, scale=5.0, eps=1e-3):
         phi = (field - lv) / grad_mag
         sdfs.append(torch.tanh(phi / scale))
     return torch.cat(sdfs, dim=1)
+
+
+def soft_isotherm_sdf(field, levels, scale=5.0, eps=1e-3):
+    """Alias for :func:`soft_levelset_sdf` (heat / isotherm tasks)."""
+    return soft_levelset_sdf(field, levels, scale=scale, eps=eps)
 
 
 def gradient_loss(pred, target):
@@ -126,8 +136,8 @@ def iso_recfno_loss(
 
     loss_grad = gradient_loss(pred, target)
 
-    levels = temperature_quantile_levels(target, quantiles)
-    sdf_gt = soft_isotherm_sdf(target, levels, scale=sdf_scale)
+    levels = field_quantile_levels(target, quantiles)
+    sdf_gt = soft_levelset_sdf(target, levels, scale=sdf_scale)
     loss_sdf = F.l1_loss(sdf_pred, sdf_gt)
 
     loss_ssim = ssim_loss(pred, target)

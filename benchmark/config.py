@@ -20,6 +20,8 @@ FIELD_STD = 50.0  # temperature normalization scale (K)
 
 # Training
 EPOCHS = 300
+RESUME_EPOCHS = 200
+TOTAL_EPOCHS = EPOCHS + RESUME_EPOCHS
 DEFAULT_BATCH = 8
 
 # Paths (relative to heat2D/ working directory)
@@ -36,6 +38,7 @@ OUR_MODELS = ['SGF-RecFNO', 'IsoRecFNO']
 BASELINE_RECFNO = ['RecFNO']  # Zhao et al. (2023)
 EXTERNAL_MODELS = ['PINO', 'Geo-FNO', 'GINO']
 ALL_MODELS = OUR_MODELS + BASELINE_RECFNO + EXTERNAL_MODELS
+COMPARISON_MODELS = ['SGF-RecFNO', 'SGF-RecFNO (K=8)'] + ['IsoRecFNO'] + BASELINE_RECFNO + EXTERNAL_MODELS
 PRIMARY_MODEL = 'SGF-RecFNO'
 
 # Legacy alias

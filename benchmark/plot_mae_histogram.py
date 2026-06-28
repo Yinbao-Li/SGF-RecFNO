@@ -15,7 +15,7 @@ from utils.bootstrap import ensure_repo_context
 
 ensure_repo_context(heat2d_cwd=True)
 
-from benchmark.config import ALL_MODELS, COMPARISON_OUT_DIR
+from benchmark.config import COMPARISON_MODELS, COMPARISON_OUT_DIR
 from benchmark.registry import MODEL_SPECS, _find_ckpt
 from benchmark.run_comparison import collect_per_sample_mae_k, ensure_checkpoints
 from benchmark.visualize import plot_mae_distribution_overlay
@@ -42,7 +42,7 @@ def parse_args():
 
 def _load_cache(cache_path):
     data = np.load(cache_path)
-    return {_cache_key(name): data[_cache_key(name)] for name in ALL_MODELS if _cache_key(name) in data}
+    return {_cache_key(name): data[_cache_key(name)] for name in COMPARISON_MODELS if _cache_key(name) in data}
 
 
 def _save_cache(cache_path, model_maes):
@@ -78,7 +78,7 @@ def main():
         model_list = args.models
     else:
         model_list = [
-            name for name in ALL_MODELS
+            name for name in COMPARISON_MODELS
             if name in MODEL_SPECS and name not in missing and _find_ckpt(MODEL_SPECS[name]['exp'])
         ]
 
@@ -108,7 +108,8 @@ def main():
     _save_cache(cache_path, model_maes)
 
     out_png = os.path.join(args.out_dir, args.out_name)
-    plot_mae_distribution_overlay(model_maes, out_png)
+    highlight = 'SGF-RecFNO (K=8)' if any(n == 'SGF-RecFNO (K=8)' for n, _ in model_maes) else 'SGF-RecFNO'
+    plot_mae_distribution_overlay(model_maes, out_png, highlight_model=highlight)
     print(f'Saved: {out_png}', flush=True)
     print(f'Summary: {summary_path}', flush=True)
 

@@ -173,12 +173,49 @@ def plot_three_cases_isotherm_overlay(
 
 MAE_HIST_COLORS = {
     'SGF-RecFNO': '#B2182B',
+    'SGF-RecFNO (K=4)': '#B2182B',
+    'SGF-RecFNO (K=8)': '#D6604D',
     'IsoRecFNO': '#2166AC',
     'RecFNO': '#4393C3',
     'PINO': '#4DAF4A',
     'Geo-FNO': '#FF7F00',
     'GINO': '#984EA3',
 }
+
+# Inline labels for panel (a) ECDF — target CDF level and text offset per model.
+ECDF_LABEL_CONFIG = {
+    'SGF-RecFNO': {'target_y': 0.35, 'xytext': (8, 2)},
+    'SGF-RecFNO (K=4)': {'target_y': 0.35, 'xytext': (8, 2)},
+    'SGF-RecFNO (K=8)': {'target_y': 0.45, 'xytext': (8, -6)},
+    'PINO': {'target_y': 0.55, 'xytext': (8, -8)},
+    'IsoRecFNO': {'target_y': 0.65, 'xytext': (8, 2)},
+    'RecFNO': {'target_y': 0.75, 'xytext': (8, -6)},
+    'Geo-FNO': {'target_y': 0.85, 'xytext': (8, 4)},
+    'GINO': {'target_y': 0.94, 'xytext': (8, 0)},
+}
+
+
+def _ecdf_display_name(name):
+    if name == 'SGF-RecFNO':
+        return 'SGF-RecFNO (K=4)'
+    return name
+
+
+def _label_ecdf_curve(ax, xs, ys, label, color, *, target_y=0.5, xytext=(8, 0)):
+    """Annotate an ECDF curve with the model name (no legend)."""
+    idx = int(np.argmin(np.abs(ys - target_y)))
+    ax.annotate(
+        label,
+        (xs[idx], ys[idx]),
+        color=color,
+        fontsize=9,
+        fontweight='semibold',
+        ha='left',
+        va='center',
+        xytext=xytext,
+        textcoords='offset points',
+        clip_on=False,
+    )
 
 
 def plot_mae_distribution_overlay(
@@ -229,9 +266,12 @@ def plot_mae_distribution_overlay(
             z = 5 if name == highlight_model else 3
             xs = np.sort(maes)
             ys = np.arange(1, len(xs) + 1) / len(xs)
-            ax_cdf.plot(
-                xs, ys, color=color, linewidth=lw, zorder=z,
-                label=f'{name}  (med={np.median(maes):.4f} K)',
+            ax_cdf.plot(xs, ys, color=color, linewidth=lw, zorder=z)
+            cfg = ECDF_LABEL_CONFIG.get(name, {'target_y': 0.5, 'xytext': (8, 0)})
+            _label_ecdf_curve(
+                ax_cdf, xs, ys, _ecdf_display_name(name), color,
+                target_y=cfg['target_y'],
+                xytext=cfg['xytext'],
             )
         ax_cdf.set_xscale('log')
         ax_cdf.set_xlim(max(1e-4, float(all_core.min()) * 0.7), float(all_core.max()) * 1.15)
@@ -251,7 +291,6 @@ def plot_mae_distribution_overlay(
         ax_cdf.spines['top'].set_visible(False)
         ax_cdf.spines['right'].set_visible(False)
         ax_cdf.grid(True, which='both', linestyle='--', alpha=0.3, linewidth=0.6)
-        ax_cdf.legend(loc='lower right', fontsize=8.5, framealpha=0.92, ncol=2)
 
         # --- (b) Ridge KDE: zoomed view for the accurate-model cluster ---
         ax_ridge = fig.add_subplot(gs[1, 0])
@@ -309,6 +348,35 @@ def plot_mae_distribution_overlay(
         plt.close()
 
 
+def _annotate_curve_label(ax, x, y, label, color, *, log_y=False, x_frac=0.70, xytext=(6, 0)):
+    """Place a model name on its curve (no legend)."""
+    n = len(x)
+    if n == 0:
+        return
+    idx = int(np.clip(x_frac, 0.05, 0.95) * (n - 1))
+    if log_y:
+        for j in range(idx, n):
+            if y[j] > 0:
+                idx = j
+                break
+        for j in range(idx, -1, -1):
+            if y[j] > 0:
+                idx = j
+                break
+    ax.annotate(
+        label,
+        (x[idx], y[idx]),
+        color=color,
+        fontsize=9,
+        fontweight='semibold',
+        ha='left',
+        va='center',
+        xytext=xytext,
+        textcoords='offset points',
+        clip_on=False,
+    )
+
+
 def plot_spectrum_curves(curves, out_path, title='Fourier Spectrum Error'):
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
     ax = axes[0]
@@ -334,6 +402,74 @@ def plot_spectrum_curves(curves, out_path, title='Fourier Spectrum Error'):
     plt.tight_layout()
     plt.savefig(out_path, dpi=150, bbox_inches='tight')
     plt.close()
+
+
+def plot_spectrum_error_figure(
+    curves,
+    out_path,
+    *,
+    title='',
+    inline_labels=True,
+    show_legend=False,
+    label_x_frac=0.68,
+    label_x_fracs=None,
+    label_offsets=None,
+    colors=None,
+    figsize=(6.8, 4.6),
+    dpi=300,
+):
+    """
+    Plot radial squared spectrum error vs. ground truth.
+
+    ``curves``: {model_name: err_array} or {model_name: (pred_spec, err_array)}.
+    When ``inline_labels`` is True, model names are drawn on the curves (no legend).
+    """
+    if label_offsets is None:
+        label_offsets = {}
+    if label_x_fracs is None:
+        label_x_fracs = {}
+
+    default_colors = [
+        '#B2182B', '#D6604D', '#2166AC', '#4393C3', '#4DAF4A', '#984EA3', '#FF7F00',
+    ]
+
+    with plt.rc_context({
+        'font.size': 10,
+        'font.family': 'serif',
+        'axes.linewidth': 0.9,
+    }):
+        fig, ax = plt.subplots(figsize=figsize)
+        names = list(curves.keys())
+
+        for i, name in enumerate(names):
+            data = curves[name]
+            err = data[1] if isinstance(data, (tuple, list)) else data
+            err = np.asarray(err, dtype=np.float64)
+            x = np.arange(len(err))
+            color = (colors or {}).get(name, default_colors[i % len(default_colors)])
+            ax.plot(x, err, color=color, linewidth=1.6, zorder=3)
+            if inline_labels:
+                _annotate_curve_label(
+                    ax, x, err, name, color,
+                    log_y=True,
+                    x_frac=label_x_fracs.get(name, label_x_frac),
+                    xytext=label_offsets.get(name, (6, 0)),
+                )
+
+        ax.set_xlabel('Radial frequency bin')
+        ax.set_ylabel('Squared spectrum error')
+        ax.set_yscale('log')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.grid(True, which='both', linestyle='--', alpha=0.35, linewidth=0.6)
+        if show_legend:
+            ax.legend(fontsize=8, frameon=False)
+        if title:
+            ax.set_title(title)
+
+        plt.tight_layout()
+        plt.savefig(out_path, dpi=dpi, bbox_inches='tight', pad_inches=0.08)
+        plt.close()
 
 
 def plot_field_triplet(truth, pred, out_path, title=''):

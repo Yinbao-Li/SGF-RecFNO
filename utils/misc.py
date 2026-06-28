@@ -7,7 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 def save_model(args, epoch, loss, model):
     # remove old models
-    if epoch > 0:
+    if epoch > 0 and args.best_record['epoch'] >= 0:
         best_snapshot = 'best_epoch_{}_loss_{:.8f}.pth'.format(
             args.best_record['epoch'], args.best_record['loss'])
         best_snapshot = os.path.join(args.exp_path, best_snapshot)

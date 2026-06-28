@@ -65,6 +65,13 @@ def heat2d_log_root() -> Path:
 DATA_ROOT = str(data_root())
 CHECKPOINT_ROOT = str(checkpoint_root())
 HEAT_DIR = os.path.join(DATA_ROOT, 'heat')
+CYLINDER_DIR = os.path.join(DATA_ROOT, 'cylinder')
+DARCY_DIR = os.path.join(DATA_ROOT, 'darcy')
+
+CYLINDER_PICKLE = os.path.join(CYLINDER_DIR, 'Cy_Taira.pickle')
+DARCY_H5 = os.path.join(DARCY_DIR, 'darcy6000.h5')
+CYLINDER_SPLITS_JSON = os.path.join(CYLINDER_DIR, 'splits.json')
+DARCY_SPLITS_JSON = os.path.join(DARCY_DIR, 'splits.json')
 
 HEAT_TRAIN_H5 = os.path.join(HEAT_DIR, 'train.h5')
 HEAT_VAL_H5 = os.path.join(HEAT_DIR, 'val.h5')

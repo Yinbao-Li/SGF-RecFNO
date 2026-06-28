@@ -59,7 +59,23 @@ Checkpoints: `heat2D/logs/ckpt/ablation_loss_*` and `ablation_k*`. Evaluation: `
 
 ## Outputs
 
-Runtime results go to `heat2D/logs/benchmark_comparison/` (gitignored). Committed figures live under `figures/` — see [figures/README.md](../figures/README.md).
+Runtime results: `heat2D/logs/benchmark_comparison/` (heat), `heat2D/logs/fluid_benchmark/` (fluid).
+
+## Fluid benchmark
+
+```bash
+make train-fluid-resume     # 7 models × 2 tasks → 500 epochs
+make compare-fluid
+make plot-fluid-figures
+```
+
+| Script | Output |
+|--------|--------|
+| `plot_all_fluid_figures.py` | All `figures/fluid/*` + `logs/fluid_benchmark/` tables |
+| `fluid2D/run_fluid_benchmark.py` | Train + evaluate |
+| `fluid2D/run_fluid_resume.py` | Resume 300→500 (Iso/K8 fresh) |
+
+Geometry presets: `benchmark/fluid_config.py` · Cylinder: wake R1 · Darcy: dual \(p + |\nabla p|\).
 
 ## Further reading
 

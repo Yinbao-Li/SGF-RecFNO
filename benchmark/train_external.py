@@ -50,10 +50,16 @@ def _get_loaders(spec, batch_size):
                 DataLoader(HeatDataset(list(range(4000, 5000))), batch_size=batch_size, num_workers=4),
             )
         else:
-            print('Building HeatInterpolDataset (one-time grid interpolation)...', flush=True)
+            print('Building HeatInterpolDataset (vectorized precompute)...', flush=True)
             _DATA_CACHE[key] = (
-                DataLoader(HeatInterpolDataset(list(range(4000))), batch_size=batch_size, num_workers=0, shuffle=True),
-                DataLoader(HeatInterpolDataset(list(range(4000, 5000))), batch_size=batch_size, num_workers=0),
+                DataLoader(
+                    HeatInterpolDataset(list(range(4000))),
+                    batch_size=batch_size, num_workers=4, shuffle=True, pin_memory=True,
+                ),
+                DataLoader(
+                    HeatInterpolDataset(list(range(4000, 5000))),
+                    batch_size=batch_size, num_workers=4, pin_memory=True,
+                ),
             )
     return _DATA_CACHE[key]
 

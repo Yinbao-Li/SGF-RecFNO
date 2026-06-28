@@ -1,22 +1,14 @@
 # -*- coding: utf-8 -*-
 """Self-Geometry Feedback RecFNO (SGF-RecFNO)."""
+from __future__ import annotations
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from model.fno import FNORecon, SpectralConv2d
-from utils.iso_geometry import (
-    DEFAULT_QUANTILES,
-    soft_isotherm_sdf,
-    temperature_quantile_levels,
-)
-
-
-def extract_self_geometry(field, quantiles=DEFAULT_QUANTILES, sdf_scale=5.0):
-    """Build multi-level SDF maps from a predicted coarse field only."""
-    levels = temperature_quantile_levels(field, quantiles)
-    sdf = soft_isotherm_sdf(field, levels, scale=sdf_scale)
-    return sdf, levels
+from utils.field_geometry import FieldGeometryConfig, GEOMETRY_PRESETS, extract_self_geometry
+from utils.iso_geometry import DEFAULT_QUANTILES
 
 
 class RefinementBlock(nn.Module):
@@ -77,10 +69,14 @@ class SGFRecFNO(nn.Module):
         refine_modes1=24,
         refine_modes2=24,
         refine_width=32,
+        geometry: FieldGeometryConfig | None = None,
     ):
         super().__init__()
+        self.geometry = geometry or GEOMETRY_PRESETS['heat']
         self.quantiles = tuple(quantiles)
         self.sdf_scale = sdf_scale
+        if self.geometry.mode != 'single':
+            num_sdf = self.geometry.num_sdf_channels(len(self.quantiles))
 
         self.coarse_net = FNORecon(
             sensor_num=sensor_num,
@@ -100,7 +96,11 @@ class SGFRecFNO(nn.Module):
     def forward(self, x, return_aux=False, ablate_sdf=False, skip_refine=False):
         coarse = self.coarse_net(x)
         sdf_self, levels = extract_self_geometry(
-            coarse, self.quantiles, self.sdf_scale,
+            coarse,
+            geometry=self.geometry,
+            quantiles=self.quantiles,
+            sdf_scale=self.sdf_scale,
+            k=len(self.quantiles),
         )
         if skip_refine:
             field = coarse

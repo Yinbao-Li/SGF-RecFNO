@@ -1,4 +1,4 @@
-.PHONY: install setup-external train-sgf train-all train-external train-ablations plot-ablations plot-figures compare plot-case clean-pyc help
+.PHONY: install setup-external train-sgf train-all train-external train-ablations train-resume plot-ablations plot-figures compare plot-benchmark-figures train-fluid train-fluid-resume compare-fluid plot-fluid-figures export-fluid plot-case clean-pyc help
 
 install:
 	pip install -e .
@@ -18,6 +18,9 @@ train-external:
 train-ablations:
 	cd heat2D && python run_sgf_ablations.py --study all
 
+train-resume:
+	cd heat2D && RECFNO_DATA_ROOT=../data python run_benchmark_resume.py
+
 plot-ablations:
 	cd heat2D && RECFNO_DATA_ROOT=../data python ../benchmark/plot_ablation_studies.py --copy-figures
 
@@ -25,7 +28,28 @@ plot-figures:
 	cd heat2D && RECFNO_DATA_ROOT=../data python ../benchmark/plot_all_figures.py
 
 compare:
-	cd heat2D && python ../benchmark/run_comparison.py --out-dir logs/benchmark_comparison
+	cd heat2D && RECFNO_DATA_ROOT=../data python ../benchmark/run_comparison.py --out-dir logs/benchmark_comparison
+	cd heat2D && RECFNO_DATA_ROOT=../data python ../benchmark/plot_spectrum_error.py --out-dir logs/benchmark_comparison --use-cache
+	cd heat2D && RECFNO_DATA_ROOT=../data python ../benchmark/plot_mae_histogram.py --out-dir logs/benchmark_comparison
+
+plot-benchmark-figures:
+	cd heat2D && RECFNO_DATA_ROOT=../data python ../benchmark/plot_spectrum_error.py --out-dir logs/benchmark_comparison --use-cache --copy-figures
+	cd heat2D && RECFNO_DATA_ROOT=../data python ../benchmark/plot_mae_histogram.py --out-dir logs/benchmark_comparison --copy-figures
+
+train-fluid:
+	cd fluid2D && RECFNO_DATA_ROOT=../../data python run_fluid_benchmark.py --task all --skip-existing
+
+train-fluid-resume:
+	cd fluid2D && RECFNO_DATA_ROOT=../../data python run_fluid_resume.py --task all
+
+compare-fluid:
+	cd fluid2D && RECFNO_DATA_ROOT=../../data python run_fluid_benchmark.py --task all --compare-only
+
+plot-fluid-figures:
+	cd heat2D && RECFNO_DATA_ROOT=../../data python ../benchmark/plot_all_fluid_figures.py --copy-figures
+
+export-fluid:
+	cd heat2D && RECFNO_DATA_ROOT=../../data python ../benchmark/export_fluid_benchmark.py --all
 
 plot-case:
 	cd heat2D && python ../benchmark/plot_case_comparison.py
@@ -35,16 +59,8 @@ clean-pyc:
 
 help:
 	@echo "SGF-RecFNO Makefile targets:"
-	@echo "  make install          - editable pip install"
-	@echo "  make train-sgf        - train SGF-RecFNO (recommended)"
-	@echo "  make train-all        - train SGF / Iso / RecFNO baselines (300 ep)"
-	@echo "  make setup-external   - clone GINO/Geo-FNO/PINO repos"
-	@echo "  make train-external   - train external baselines (300 ep)"
-	@echo "  make train-ablations  - loss & quantile-K ablations (7×300 ep)"
-	@echo "  make plot-ablations   - evaluate ablations & plot MAE figures"
-	@echo "  make plot-figures     - regenerate all README figures"
-	@echo "  make compare          - run unified benchmark evaluation"
-	@echo "  make plot-case        - single-case error visualization"
+	@echo "  Heat: train-sgf, train-all, compare, plot-figures, plot-case"
+	@echo "  Fluid: train-fluid, train-fluid-resume, compare-fluid, plot-fluid-figures"
+	@echo "  Ablation: train-ablations, plot-ablations"
 
-# backward-compatible alias
 train-recfno: train-all
